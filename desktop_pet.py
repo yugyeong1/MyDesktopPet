@@ -14,7 +14,7 @@ from pathlib import Path
 from tkinter import messagebox, ttk
 from PIL import Image, ImageFilter, ImageTk
 
-APP_NAME="KongDesktopPet"
+APP_NAME="MyBichonDesktopPet"
 TRANSPARENT="#010101"
 SIDE_STATES={"idle":0,"walk":1,"run":2,"pant_side":3}
 FRONT_STATES={"front":0,"sit":1,"happy":2,"pant":3}
@@ -446,7 +446,7 @@ class SetupWindow(tk.Toplevel):
         self.result=False
         self.preview_frames=[]
         self.preview_index=0
-        self.title("강아지 키우기")
+        self.title("내 강아지 키우기")
         self.geometry("680x510")
         self.resizable(False,False)
         if not first_run:
@@ -509,12 +509,17 @@ class SetupWindow(tk.Toplevel):
         if not self.name_var.get().strip():
             messagebox.showwarning("이름 확인","강아지 이름을 입력해 주세요.",parent=self)
             return
+        previous_auto_start=self.settings.auto_start
+        requested_auto_start=self.auto_var.get()
         self.settings.configured=True
         self.settings.name=self.name_var.get().strip()
         self.settings.size_percent=max(10,min(180,self.size_var.get()))
-        self.settings.auto_start=self.auto_var.get()
+        self.settings.auto_start=requested_auto_start
         self.settings.save()
-        set_auto_start(self.settings.auto_start)
+        # 자동 실행 설정이 실제로 바뀐 경우에만 Windows Run 레지스트리에 접근한다.
+        # 설정을 그대로 저장하거나 최초 실행 시 꺼져 있으면 레지스트리를 열지 않는다.
+        if requested_auto_start!=previous_auto_start:
+            set_auto_start(requested_auto_start)
         self.result=True
         self.destroy()
 
@@ -1234,7 +1239,7 @@ class DogWindow:
         self.settings.surface_offset_y=0
         if self.settings.follow_mouse:
             self._set_state("walk",10**6)
-            self.say("따라갈게! 🐾",1700)
+            self.say("마우스를 따라갈게! 🐾",1700)
         else:
             self._set_state("idle",random.randint(20,45))
             self.say("여기서 놀게!",1500)
@@ -1265,7 +1270,7 @@ class DogWindow:
     def sleep(self):
         if self.sleeping:
             self._wake_from_sleep()
-            self.say("잘 잤다 멍!",1500)
+            self.say("잘 잤다!",1500)
             return
         self.sleeping=True
         now=time.monotonic()
@@ -1285,7 +1290,7 @@ class DogWindow:
             self.settings.save()
         if now>=self.sleep_end_at or self.settings.energy>=100:
             self._wake_from_sleep()
-            self.say("푹 잤다 멍! 에너지가 생겼어!",1900)
+            self.say("푹 잤다! 에너지가 생겼어!",1900)
 
     def _ensure_daily_log(self):
         today=datetime.now().date().isoformat()
@@ -1416,7 +1421,7 @@ class DogWindow:
     def reset_pet(self):
         if not messagebox.askyesno(
             "펫 초기화",
-            "처음 상태로 되돌릴까요?\n\n"
+            "구름이를 처음 상태로 되돌릴까요?\n\n"
             "애정도, 포만감, 체력, 기분, 레벨/경험치, 수집품, 모험 통계와 크기가 초기화됩니다.",
             parent=self.root,
         ):
